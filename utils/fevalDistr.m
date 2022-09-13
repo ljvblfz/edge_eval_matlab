@@ -76,12 +76,12 @@ dfs={'type','local','pLaunch',[],'group',1};
 [type,pLaunch,group]=getPrmDflt(varargin,dfs,1); store=(nargout==2);
 if(isempty(jobs)), res=cell(1,0); out=1; return; end
 switch lower(type)
-  case 'local',     [out,res]=fedLocal(funNm,jobs,store);
-  case 'parfor',    [out,res]=fedParfor(funNm,jobs,store);
-  case 'distr',     [out,res]=fedDistr(funNm,jobs,pLaunch,group,store);
-  case 'compiled',  [out,res]=fedCompiled(funNm,jobs,store);
-  case 'winhpc',    [out,res]=fedWinhpc(funNm,jobs,pLaunch,store);
-  otherwise,        error('unkown type: ''%s''',type);
+    case 'local',     [out,res]=fedLocal(funNm,jobs,store);
+    case 'parfor',    [out,res]=fedParfor(funNm,jobs,store);
+    case 'distr',     [out,res]=fedDistr(funNm,jobs,pLaunch,group,store);
+    case 'compiled',  [out,res]=fedCompiled(funNm,jobs,store);
+    case 'winhpc',    [out,res]=fedWinhpc(funNm,jobs,pLaunch,store);
+    otherwise,        error('unkown type: ''%s''',type);
 end
 end
 
@@ -90,38 +90,38 @@ function [out,res] = fedLocal( funNm, jobs, store )
 nJob=length(jobs); res=cell(1,nJob); out=1;
 tid=ticStatus('collecting jobs');
 for i=1:nJob, r=feval(funNm,jobs{i}{:});
-  if(store), res{i}=r; end; tocStatus(tid,i/nJob); end
+    if(store), res{i}=r; end; tocStatus(tid,i/nJob); end
 end
 
 function [out,res] = fedParfor( funNm, jobs, store )
 % Run jobs locally using parfor loop.
 nJob=length(jobs); res=cell(1,nJob); out=1;
 parfor i=1:nJob, r=feval(funNm,jobs{i}{:});
-  if(store), res{i}=r; end; end
+    if(store), res{i}=r; end; end
 end
 
 function [out,res] = fedDistr( funNm, jobs, pLaunch, group, store )
 % Run jobs using Linux queuing system.
 if(~exist('controller.m','file'))
-  msg='distributed queuing not installed, switching to type=''local''.';
-  warning(msg); [out,res]=fedLocal(funNm,jobs,store); return; %#ok<WNTAG>
+    msg='distributed queuing not installed, switching to type=''local''.';
+    warning(msg); [out,res]=fedLocal(funNm,jobs,store); return; %#ok<WNTAG>
 end
 nJob=length(jobs); res=cell(1,nJob); controller('launchQueue',pLaunch{:});
 if( group>1 )
-  nJobGrp=ceil(nJob/group); jobsGrp=cell(1,nJobGrp); k=0;
-  for i=1:nJobGrp, k1=min(nJob,k+group);
-    jobsGrp{i}={funNm,jobs(k+1:k1),'type','local'}; k=k1; end
-  nJob=nJobGrp; jobs=jobsGrp; funNm='fevalDistr';
+    nJobGrp=ceil(nJob/group); jobsGrp=cell(1,nJobGrp); k=0;
+    for i=1:nJobGrp, k1=min(nJob,k+group);
+        jobsGrp{i}={funNm,jobs(k+1:k1),'type','local'}; k=k1; end
+    nJob=nJobGrp; jobs=jobsGrp; funNm='fevalDistr';
 end
 jids=controller('jobsAdd',nJob,funNm,jobs); k=0;
 fprintf('Sent %i jobs...\n',nJob); tid=ticStatus('collecting jobs');
 while( 1 )
-  jids1=controller('jobProbe',jids);
-  if(isempty(jids1)), pause(.1); continue; end
-  jid=jids1(1); [r,err]=controller('jobRecv',jid);
-  if(~isempty(err)), disp('ABORTING'); out=0; break; end
-  k=k+1; if(store), res{jid==jids}=r; end
-  tocStatus(tid,k/nJob); if(k==nJob), out=1; break; end
+    jids1=controller('jobProbe',jids);
+    if(isempty(jids1)), pause(.1); continue; end
+    jid=jids1(1); [r,err]=controller('jobRecv',jid);
+    if(~isempty(err)), disp('ABORTING'); out=0; break; end
+    k=k+1; if(store), res{jid==jids}=r; end
+    tocStatus(tid,k/nJob); if(k==nJob), out=1; break; end
 end; controller('closeQueue');
 end
 
@@ -131,15 +131,15 @@ nJob=length(jobs); res=cell(1,nJob); tDir=jobSetup('.',funNm,'',{});
 cmd=[tDir 'fevalDistrDisk ' funNm ' ' tDir ' ']; i=0; k=0;
 Q=feature('numCores'); q=0; tid=ticStatus('collecting jobs');
 while( 1 )
-  % launch jobs until queue is full (q==Q) or all jobs launched (i==nJob)
-  while(q<Q && i<nJob), q=q+1; i=i+1; jobSave(tDir,jobs{i},i);
-    if(ispc), system2(['start /B /min ' cmd int2str2(i,10)],0);
-    else system2([cmd int2str2(i,10) ' &'],0); end
-  end
-  % collect completed jobs (k1 of them), release queue slots
-  done=jobFileIds(tDir,'done'); k1=length(done); k=k+k1; q=q-k1;
-  for i1=done, res{i1}=jobLoad(tDir,i1,store); end
-  pause(1); tocStatus(tid,k/nJob); if(k==nJob), out=1; break; end
+    % launch jobs until queue is full (q==Q) or all jobs launched (i==nJob)
+    while(q<Q && i<nJob), q=q+1; i=i+1; jobSave(tDir,jobs{i},i);
+        if(ispc), system2(['start /B /min ' cmd int2str2(i,10)],0);
+        else system2([cmd int2str2(i,10) ' &'],0); end
+    end
+    % collect completed jobs (k1 of them), release queue slots
+    done=jobFileIds(tDir,'done'); k1=length(done); k=k+k1; q=q-k1;
+    for i1=done, res{i1}=jobLoad(tDir,i1,store); end
+    pause(1); tocStatus(tid,k/nJob); if(k==nJob), out=1; break; end
 end
 for i=1:10, try rmdir(tDir,'s'); break; catch,pause(1),end; end %#ok<CTCH>
 end
@@ -148,16 +148,16 @@ function [out,res] = fedWinhpc( funNm, jobs, pLaunch, store )
 % Run jobs using Windows HPC Server.
 nJob=length(jobs); res=cell(1,nJob);
 dfs={'shareDir','REQ','scheduler','REQ','executable','fevalDistrDisk',...
-  'mccOptions',{},'coresPerTask',1,'minCores',1024,'priority',2000};
+    'mccOptions',{},'coresPerTask',1,'minCores',1024,'priority',2000};
 p = getPrmDflt(pLaunch,dfs,1);
 tDir = jobSetup(p.shareDir,funNm,p.executable,p.mccOptions);
 for i=1:nJob, jobSave(tDir,jobs{i},i); end
 hpcSubmit(funNm,1:nJob,tDir,p); k=0;
 ticId=ticStatus('collecting jobs');
 while( 1 )
-  done=jobFileIds(tDir,'done'); k=k+length(done);
-  for i1=done, res{i1}=jobLoad(tDir,i1,store); end
-  pause(5); tocStatus(ticId,k/nJob); if(k==nJob), out=1; break; end
+    done=jobFileIds(tDir,'done'); k=k+length(done);
+    for i1=done, res{i1}=jobLoad(tDir,i1,store); end
+    pause(5); tocStatus(ticId,k/nJob); if(k==nJob), out=1; break; end
 end
 for i=1:10, try rmdir(tDir,'s'); break; catch,pause(5),end; end %#ok<CTCH>
 end
@@ -168,18 +168,18 @@ n=length(ids); tids=cell(1,n); if(n==0), return; end;
 scheduler=[' /scheduler:' pLaunch.scheduler ' '];
 m=system2(['cluscfg view' scheduler],0);
 minCores=(hpcParse(m,'total number of nodes',1) - ...
-  hpcParse(m,'Unreachable nodes',1) - 1)*8;
+    hpcParse(m,'Unreachable nodes',1) - 1)*8;
 minCores=min([minCores pLaunch.minCores n*pLaunch.coresPerTask]);
 m=system2(['job new /numcores:' int2str(minCores) '-*' scheduler ...
-  '/priority:' int2str(pLaunch.priority)],1);
+    '/priority:' int2str(pLaunch.priority)],1);
 jid=hpcParse(m,'created job, id',0);
 s=min(ids); e=max(ids); p=n>1 && isequal(ids,s:e);
 if(p), jid1=[jid '.1']; else jid1=jid; end
 for i=1:n, tids{i}=[jid1 '.' int2str(i)]; end
 cmd0=''; if(p), cmd0=['/parametric:' int2str(s) '-' int2str(e)]; end
 cmd=@(id) ['job add ' jid scheduler '/workdir:' tDir ' /numcores:' ...
-  int2str(pLaunch.coresPerTask) ' ' cmd0 ' /stdout:stdout' id ...
-  '.txt ' pLaunch.executable ' ' funNm ' ' tDir ' ' id];
+    int2str(pLaunch.coresPerTask) ' ' cmd0 ' /stdout:stdout' id ...
+    '.txt ' pLaunch.executable ' ' funNm ' ' tDir ' ' id];
 if(p), ids1='*'; n=1; else ids1=int2str2(ids); end
 if(n==1), ids1={ids1}; end; for i=1:n, system2(cmd(ids1{i}),1); end
 system2(['job submit /id:' jid scheduler],1); disp(repmat(' ',1,80));
@@ -201,13 +201,13 @@ function tDir = jobSetup( rtDir, funNm, executable, mccOptions )
 t=clock; t=mod(t(end),1); t=round((t+rand)/2*1e15);
 tDir=[rtDir filesep sprintf('fevalDistr-%015i',t) filesep]; mkdir(tDir);
 if(~isempty(executable) && exist(executable,'file'))
-  fprintf('Reusing compiled executable...\n'); copyfile(executable,tDir);
+    fprintf('Reusing compiled executable...\n'); copyfile(executable,tDir);
 else
-  t=clock; fprintf('Compiling (this may take a while)...\n');
-  [~,f,e]=fileparts(executable); if(isempty(f)), f='fevalDistrDisk'; end
-  mcc('-m','fevalDistrDisk','-d',tDir,'-o',f,'-a',funNm,mccOptions{:});
-  t=etime(clock,t); fprintf('Compile complete (%.1f seconds).\n',t);
-  if(~isempty(executable)), copyfile([tDir filesep f e],executable); end
+    t=clock; fprintf('Compiling (this may take a while)...\n');
+    [~,f,e]=fileparts(executable); if(isempty(f)), f='fevalDistrDisk'; end
+    mcc('-m','fevalDistrDisk','-d',tDir,'-o',f,'-a',funNm,mccOptions{:});
+    t=etime(clock,t); fprintf('Compile complete (%.1f seconds).\n',t);
+    if(~isempty(executable)), copyfile([tDir filesep f e],executable); end
 end
 end
 
@@ -229,9 +229,9 @@ if(store), r=load([f '-out']); r=r.r; else r=[]; end
 fs={[f '-done'],[f '-in.mat'],[f '-out.mat']};
 delete(fs{:}); pause(.1);
 for i=1:3, k=0; while(exist(fs{i},'file')==2) %#ok<ALIGN>
-    warning('Waiting to delete %s.',fs{i}); %#ok<WNTAG>
-    delete(fs{i}); pause(5); k=k+1; if(k>12), break; end;
-  end; end
+        warning('Waiting to delete %s.',fs{i}); %#ok<WNTAG>
+        delete(fs{i}); pause(5); k=k+1; if(k>12), break; end;
+    end; end
 end
 
 function msg = system2( cmd, show )

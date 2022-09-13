@@ -48,7 +48,7 @@ function [thrs,cntR,sumR,cntP,sumP,V] = edgesEvalImg( E, G, varargin )
 dfs={ 'out','', 'thrs',99, 'maxDist',.0075, 'thin',1 };
 [out,thrs,maxDist,thin] = getPrmDflt(varargin,dfs,1);
 if(any(mod(thrs,1)>0)), K=length(thrs); thrs=thrs(:); else
-  K=thrs; thrs=linspace(1/(K+1),1-1/(K+1),K)'; end
+    K=thrs; thrs=linspace(1/(K+1),1-1/(K+1),K)'; end
 
 % load edges (E) and ground truth (G)
 if(all(ischar(E))), E=double(imread(E))/255; end
@@ -59,27 +59,27 @@ for g=1:n, G{g}=double(G{g}.Boundaries); end
 Z=zeros(K,1); cntR=Z; sumR=Z; cntP=Z; sumP=Z;
 if(nargout>=6), V=zeros([size(E) 3 K]); end
 for k = 1:K
-  % threshhold and thin E
-  E1 = double(E>=max(eps,thrs(k)));
-  if(thin), E1=double(bwmorph(E1,'thin',inf)); end
-  % compare to each ground truth in turn and accumualte
-  Z=zeros(size(E)); matchE=Z; matchG=Z; allG=Z;
-  for g = 1:n
-    [matchE1,matchG1] = correspondPixels(E1,G{g},maxDist);
-    matchE = matchE | matchE1>0;
-    matchG = matchG + double(matchG1>0);
-    allG = allG + G{g};
-  end
-  % compute recall (summed over each gt image)
-  cntR(k) = sum(matchG(:)); sumR(k) = sum(allG(:));
-  % compute precision (edges can match any gt image)
-  cntP(k) = nnz(matchE); sumP(k) = nnz(E1);
-  % optinally create visualization of matches
-  if(nargout<6), continue; end; cs=[1 0 0; 0 .7 0; .7 .8 1]; cs=cs-1;
-  FP=E1-matchE; TP=matchE; FN=(allG-matchG)/n;
-  for g=1:3, V(:,:,g,k)=max(0,1+FN*cs(1,g)+TP*cs(2,g)+FP*cs(3,g)); end
-  V(:,2:end,:,k) = min(V(:,2:end,:,k),V(:,1:end-1,:,k));
-  V(2:end,:,:,k) = min(V(2:end,:,:,k),V(1:end-1,:,:,k));
+    % threshhold and thin E
+    E1 = double(E>=max(eps,thrs(k)));
+    if(thin), E1=double(bwmorph(E1,'thin',inf)); end
+    % compare to each ground truth in turn and accumualte
+    Z=zeros(size(E)); matchE=Z; matchG=Z; allG=Z;
+    for g = 1:n
+        [matchE1,matchG1] = correspondPixels(E1,G{g},maxDist);
+        matchE = matchE | matchE1>0;
+        matchG = matchG + double(matchG1>0);
+        allG = allG + G{g};
+    end
+    % compute recall (summed over each gt image)
+    cntR(k) = sum(matchG(:)); sumR(k) = sum(allG(:));
+    % compute precision (edges can match any gt image)
+    cntP(k) = nnz(matchE); sumP(k) = nnz(E1);
+    % optinally create visualization of matches
+    if(nargout<6), continue; end; cs=[1 0 0; 0 .7 0; .7 .8 1]; cs=cs-1;
+    FP=E1-matchE; TP=matchE; FN=(allG-matchG)/n;
+    for g=1:3, V(:,:,g,k)=max(0,1+FN*cs(1,g)+TP*cs(2,g)+FP*cs(3,g)); end
+    V(:,2:end,:,k) = min(V(:,2:end,:,k),V(:,1:end-1,:,k));
+    V(2:end,:,:,k) = min(V(2:end,:,:,k),V(1:end-1,:,:,k));
 end
 
 % if output file specified write results to disk
