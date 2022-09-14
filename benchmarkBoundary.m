@@ -1,5 +1,9 @@
 function benchmarkBoundary(edges_dir, gt_dir, name)
+%
 % Porting from Pdollar's edges.
+% https://github.com/pdollar/edges
+%
+
 addpath('mex');
 addpath('utils');
 
