@@ -1,4 +1,4 @@
-function C = mat2cell2( X, parts )
+function C = mat2cell2(X, parts)
 % Break matrix up into a cell array of same sized matrices.
 %
 % Useful wrapper for matlab function mat2cell.  Instead of specifying
@@ -31,15 +31,22 @@ function C = mat2cell2( X, parts )
 % Copyright 2014 Piotr Dollar.  [pdollar-at-gmail.com]
 % Licensed under the Simplified BSD License [see external/bsd.txt]
 
-siz = size(X); nd = ndims(X);
-if(length(parts)>nd && all(parts(nd+1:end)==1)), parts=parts(1:nd); end
-[parts,er] = checkNumArgs( parts, size(siz), 0, 2 ); error(er);
+siz = size(X);
+nd = ndims(X);
+if (length(parts) > nd && all(parts(nd+1:end) == 1)), parts = parts(1:nd); end
+[parts, er] = checkNumArgs(parts, size(siz), 0, 2);
+error(er);
 
 % crop border areas so as to make dims of X divisible by parts
-parts = min(siz,parts); siz = siz - mod( siz, parts );
-if (~all( siz==size(X))); X = arrayCrop( X, ones(1,nd), siz ); end
+parts = min(siz, parts);
+siz = siz - mod(siz, parts);
+if (~all(siz == size(X)));
+    X = arrayCrop(X, ones(1, nd), siz);
+end
 
 % Convert to cell array by calling mat2cell
-bounds = cell(1,nd);
-for d=1:nd; bounds{d} = repmat( siz(d)/parts(d), [1 parts(d)] ); end
-C=mat2cell( X, bounds{:});
+bounds = cell(1, nd);
+for d = 1:nd;
+    bounds{d} = repmat(siz(d)/parts(d), [1, parts(d)]);
+end
+C = mat2cell(X, bounds{:});

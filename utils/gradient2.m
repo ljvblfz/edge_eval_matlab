@@ -1,4 +1,4 @@
-function [Gx,Gy] = gradient2( I )
+function [Gx, Gy] = gradient2(I)
 % Compute numerical gradients along x and y directions.
 %
 % For 2D arrays identical to Matlab's gradient() with a spacing value of
@@ -32,4 +32,4 @@ function [Gx,Gy] = gradient2( I )
 % Copyright 2014 Piotr Dollar & Ron Appel.  [pdollar-at-gmail.com]
 % Licensed under the Simplified BSD License [see external/bsd.txt]
 
-[Gx,Gy]=gradientMex('gradient2',I);
+[Gx, Gy] = gradientMex('gradient2', I);

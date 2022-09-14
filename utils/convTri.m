@@ -1,4 +1,4 @@
-function J = convTri( I, r, s, nomex )
+function J = convTri(I, r, s, nomex)
 % Extremely fast 2D image convolution with a triangle filter.
 %
 % Convolves an image by a 2D triangle filter (the 1D triangle filter f is
@@ -75,21 +75,29 @@ function J = convTri( I, r, s, nomex )
 % Copyright 2014 Piotr Dollar & Ron Appel.  [pdollar-at-gmail.com]
 % Licensed under the Simplified BSD License [see external/bsd.txt]
 
-if( nargin<3 ), s=1; end
-if( nargin<4 ), nomex=0; end
-if( isempty(I) || (r==0 && s==1) ), J = I; return; end
-m=min(size(I,1),size(I,2)); if( m<4 || 2*r+1>=m ), nomex=1; end
+if (nargin < 3), s = 1; end
+if (nargin < 4), nomex = 0; end
+if (isempty(I) || (r == 0 && s == 1)), J = I;
+    return;
+end
+m = min(size(I, 1), size(I, 2));
+if (m < 4 || 2 * r + 1 >= m), nomex = 1;
+end
 
-if( nomex==0 )
-    if( r>0 && r<=1 && s<=2 )
-        J = convConst('convTri1',I,12/r/(r+2)-2,s);
+if (nomex == 0)
+    if (r > 0 && r <= 1 && s <= 2)
+        J = convConst('convTri1', I, 12/r/(r + 2)-2, s);
     else
-        J = convConst('convTri',I,r,s);
+        J = convConst('convTri', I, r, s);
     end
 else
-    if(r<=1), p=12/r/(r+2)-2; f=[1 p 1]/(2+p); r=1;
-    else f=[1:r r+1 r:-1:1]/(r+1)^2; end
-    J = padarray(I,[r r],'symmetric','both');
-    J = convn(convn(J,f,'valid'),f','valid');
-    if(s>1), t=floor(s/2)+1; J=J(t:s:end-s+t,t:s:end-s+t,:); end
+    if (r <= 1), p = 12 / r / (r + 2) - 2;
+        f = [1, p, 1] / (2 + p);
+        r = 1;
+    else f = [1:r, r + 1, r:-1:1] / (r + 1)^2; end
+    J = padarray(I, [r, r], 'symmetric', 'both');
+    J = convn(convn(J, f, 'valid'), f', 'valid');
+    if (s > 1), t = floor(s/2) + 1;
+        J = J(t:s:end-s+t, t:s:end-s+t, :);
+    end
 end
