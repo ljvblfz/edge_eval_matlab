@@ -33,20 +33,22 @@ function C = mat2cell2(X, parts)
 
 siz = size(X);
 nd = ndims(X);
-if (length(parts) > nd && all(parts(nd+1:end) == 1)), parts = parts(1:nd); end
+if (length(parts) > nd && all(parts(nd+1:end) == 1))
+    parts = parts(1:nd);
+end
 [parts, er] = checkNumArgs(parts, size(siz), 0, 2);
 error(er);
 
 % crop border areas so as to make dims of X divisible by parts
 parts = min(siz, parts);
 siz = siz - mod(siz, parts);
-if (~all(siz == size(X)));
+if (~all(siz == size(X)))
     X = arrayCrop(X, ones(1, nd), siz);
 end
 
 % Convert to cell array by calling mat2cell
 bounds = cell(1, nd);
-for d = 1:nd;
+for d = 1:nd
     bounds{d} = repmat(siz(d)/parts(d), [1, parts(d)]);
 end
 C = mat2cell(X, bounds{:});

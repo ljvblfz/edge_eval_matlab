@@ -17,7 +17,8 @@ function fevalDistrDisk(funNm, jobDir, jobId)
 % Licensed under the Simplified BSD License [see external/bsd.txt]
 jobId = [jobDir, int2str2(str2double(jobId), 10)];
 fIn = [jobId, '-in.mat'];
-if (exist(fIn, 'file') ~= 2), return;
+if (exist(fIn, 'file') ~= 2)
+    return;
 end
 job = load(fIn);
 job = job.job;

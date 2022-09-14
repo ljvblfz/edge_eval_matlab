@@ -38,17 +38,28 @@ function varargout = getPrmDflt(prm, dfs, checkExtra)
 % Copyright 2014 Piotr Dollar.  [pdollar-at-gmail.com]
 % Licensed under the Simplified BSD License [see external/bsd.txt]
 
-if (mod(length(dfs), 2)), error('odd number of default parameters'); end
-if nargin <= 2, checkExtra = 0; end
+if (mod(length(dfs), 2))
+    error('odd number of default parameters');
+end
+if nargin <= 2
+    checkExtra = 0;
+end
 
 % get the input parameters as two cell arrays: prmVal and prmField
-if iscell(prm) && length(prm) == 1, prm = prm{1}; end
+if iscell(prm) && length(prm) == 1
+    prm = prm{1};
+end
+
 if iscell(prm)
-    if (mod(length(prm), 2)), error('odd number of parameters in prm'); end
+    if (mod(length(prm), 2))
+        error('odd number of parameters in prm');
+    end
     prmField = prm(1:2:end);
     prmVal = prm(2:2:end);
 else
-    if (~isstruct(prm)), error('prm must be a struct or a cell'); end
+    if (~isstruct(prm))
+        error('prm must be a struct or a cell');
+    end
     prmVal = struct2cell(prm);
     prmField = fieldnames(prm);
 end
@@ -59,13 +70,16 @@ dfsVal = dfs(2:2:end);
 if checkExtra > 0
     for i = 1:length(prmField)
         j = find(strcmp(prmField{i}, dfsField));
-        if isempty(j), error('parameter %s is not valid', prmField{i}); end
+        if isempty(j)
+            error('parameter %s is not valid', prmField{i});
+        end
         dfsVal(j) = prmVal(i);
     end
 elseif checkExtra < 0
     for i = 1:length(prmField)
         j = find(strcmp(prmField{i}, dfsField));
-        if isempty(j), j = length(dfsVal) + 1;
+        if isempty(j)
+            j = length(dfsVal) + 1;
             dfsField{j} = prmField{i};
         end
         dfsVal(j) = prmVal(i);

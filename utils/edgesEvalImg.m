@@ -47,7 +47,8 @@ function [thrs, cntR, sumR, cntP, sumP, V] = edgesEvalImg(E, G, varargin)
 % get additional parameters
 dfs = {'out', '', 'thrs', 99, 'maxDist', .0075, 'thin', 1};
 [out, thrs, maxDist, thin] = getPrmDflt(varargin, dfs, 1);
-if (any(mod(thrs, 1) > 0)), K = length(thrs);
+if (any(mod(thrs, 1) > 0))
+    K = length(thrs);
     thrs = thrs(:);
 else
     K = thrs;
@@ -55,11 +56,15 @@ else
 end
 
 % load edges (E) and ground truth (G)
-if (all(ischar(E))), E = double(imread(E)) / 255; end
+if (all(ischar(E)))
+    E = double(imread(E)) / 255;
+end
 G = load(G);
 G = G.groundTruth;
 n = length(G);
-for g = 1:n, G{g} = double(G{g}.Boundaries); end
+for g = 1:n
+    G{g} = double(G{g}.Boundaries);
+end
 
 % evaluate edge result at each threshold
 Z = zeros(K, 1);
@@ -67,11 +72,15 @@ cntR = Z;
 sumR = Z;
 cntP = Z;
 sumP = Z;
-if (nargout >= 6), V = zeros([size(E), 3, K]); end
+if (nargout >= 6)
+    V = zeros([size(E), 3, K]);
+end
 for k = 1:K
     % threshhold and thin E
     E1 = double(E >= max(eps, thrs(k)));
-    if (thin), E1 = double(bwmorph(E1, 'thin', inf)); end
+    if (thin)
+        E1 = double(bwmorph(E1, 'thin', inf));
+    end
     % compare to each ground truth in turn and accumualte
     Z = zeros(size(E));
     matchE = Z;
@@ -90,21 +99,25 @@ for k = 1:K
     cntP(k) = nnz(matchE);
     sumP(k) = nnz(E1);
     % optinally create visualization of matches
-    if (nargout < 6), continue;
-    end;
+    if (nargout < 6)
+        continue;
+    end
     cs = [1, 0, 0; 0, .7, 0; .7, .8, 1];
     cs = cs - 1;
     FP = E1 - matchE;
     TP = matchE;
     FN = (allG - matchG) / n;
-    for g = 1:3, V(:, :, g, k) = max(0, 1+FN*cs(1, g)+TP*cs(2, g)+FP*cs(3, g)); end
+    for g = 1:3
+        V(:, :, g, k) = max(0, 1+FN*cs(1, g)+TP*cs(2, g)+FP*cs(3, g));
+    end
     V(:, 2:end, :, k) = min(V(:, 2:end, :, k), V(:, 1:end-1, :, k));
     V(2:end, :, :, k) = min(V(2:end, :, :, k), V(1:end-1, :, :, k));
 end
 
 % if output file specified write results to disk
-if (isempty(out)), return;
-end;
+if (isempty(out))
+    return;
+end
 fid = fopen(out, 'w');
 assert(fid ~= 1);
 fprintf(fid, '%10g %10g %10g %10g %10g\n', [thrs, cntR, sumR, cntP, sumP]');

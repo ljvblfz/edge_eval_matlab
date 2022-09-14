@@ -75,10 +75,12 @@ function [out, res] = fevalDistr(funNm, jobs, varargin)
 dfs = {'type', 'local', 'pLaunch', [], 'group', 1};
 [type, pLaunch, group] = getPrmDflt(varargin, dfs, 1);
 store = (nargout == 2);
-if (isempty(jobs)), res = cell(1, 0);
+if (isempty(jobs))
+    res = cell(1, 0);
     out = 1;
     return;
 end
+
 switch lower(type)
     case 'local', [out, res] = fedLocal(funNm, jobs, store);
     case 'parfor', [out, res] = fedParfor(funNm, jobs, store);
@@ -89,29 +91,36 @@ switch lower(type)
 end
 end
 
+
 function [out, res] = fedLocal(funNm, jobs, store)
 % Run jobs locally using for loop.
 nJob = length(jobs);
 res = cell(1, nJob);
 out = 1;
 tid = ticStatus('collecting jobs');
-for i = 1:nJob, r = feval(funNm, jobs{i}{:});
-    if (store), res{i} = r;
-    end;
+for i = 1:nJob
+    r = feval(funNm, jobs{i}{:});
+    if (store)
+        res{i} = r;
+    end
     tocStatus(tid, i/nJob);
 end
 end
+
 
 function [out, res] = fedParfor(funNm, jobs, store)
 % Run jobs locally using parfor loop.
 nJob = length(jobs);
 res = cell(1, nJob);
 out = 1;
-parfor i = 1:nJob, r = feval(funNm, jobs{i}{:});
-    if (store), res{i} = r;
-    end;
+parfor i = 1:nJob
+    r = feval(funNm, jobs{i}{:});
+    if (store)
+        res{i} = r;
+    end
 end
 end
+
 
 function [out, res] = fedDistr(funNm, jobs, pLaunch, group, store)
 % Run jobs using Linux queuing system.
@@ -121,6 +130,7 @@ if (~exist('controller.m', 'file'))
     [out, res] = fedLocal(funNm, jobs, store);
     return; %#ok<WNTAG>
 end
+
 nJob = length(jobs);
 res = cell(1, nJob);
 controller('launchQueue', pLaunch{:});
@@ -128,7 +138,8 @@ if (group > 1)
     nJobGrp = ceil(nJob/group);
     jobsGrp = cell(1, nJobGrp);
     k = 0;
-    for i = 1:nJobGrp, k1 = min(nJob, k+group);
+    for i = 1:nJobGrp
+        k1 = min(nJob, k+group);
         jobsGrp{i} = {funNm, jobs(k+1:k1), 'type', 'local'};
         k = k1;
     end
@@ -136,18 +147,21 @@ if (group > 1)
     jobs = jobsGrp;
     funNm = 'fevalDistr';
 end
+
 jids = controller('jobsAdd', nJob, funNm, jobs);
 k = 0;
 fprintf('Sent %i jobs...\n', nJob);
 tid = ticStatus('collecting jobs');
 while (1)
     jids1 = controller('jobProbe', jids);
-    if (isempty(jids1)), pause(.1);
+    if (isempty(jids1))
+        pause(.1);
         continue;
     end
     jid = jids1(1);
     [r, err] = controller('jobRecv', jid);
-    if (~isempty(err)), disp('ABORTING');
+    if (~isempty(err))
+        disp('ABORTING');
         out = 0;
         break;
     end
@@ -155,12 +169,15 @@ while (1)
     if (store), res{jid == jids} = r;
     end
     tocStatus(tid, k/nJob);
-    if (k == nJob), out = 1;
+    if (k == nJob)
+        out = 1;
         break;
     end
-end;
+end
+
 controller('closeQueue');
 end
+
 
 function [out, res] = fedCompiled(funNm, jobs, store)
 % Run jobs locally in background in parallel using compiled code.
@@ -175,29 +192,41 @@ q = 0;
 tid = ticStatus('collecting jobs');
 while (1)
     % launch jobs until queue is full (q==Q) or all jobs launched (i==nJob)
-    while (q < Q && i < nJob), q = q + 1;
+    while (q < Q && i < nJob)
+        q = q + 1;
         i = i + 1;
         jobSave(tDir, jobs{i}, i);
-        if (ispc), system2(['start /B /min ', cmd, int2str2(i, 10)], 0);
-        else system2([cmd, int2str2(i, 10), ' &'], 0); end
+        if (ispc)
+            system2(['start /B /min ', cmd, int2str2(i, 10)], 0);
+        else
+            system2([cmd, int2str2(i, 10), ' &'], 0);
+        end
     end
     % collect completed jobs (k1 of them), release queue slots
     done = jobFileIds(tDir, 'done');
     k1 = length(done);
     k = k + k1;
     q = q - k1;
-    for i1 = done, res{i1} = jobLoad(tDir, i1, store); end
+    for i1 = done
+        res{i1} = jobLoad(tDir, i1, store);
+    end
     pause(1);
     tocStatus(tid, k/nJob);
-    if (k == nJob), out = 1;
+    if (k == nJob)
+        out = 1;
         break;
     end
 end
-for i = 1:10, try rmdir(tDir, 's');
+for i = 1:10
+    try
+        rmdir(tDir, 's');
         break;
-    catch, pause(1), end;
+    catch
+        pause(1);
+    end
 end %#ok<CTCH>
 end
+
 
 function [out, res] = fedWinhpc(funNm, jobs, pLaunch, store)
 % Run jobs using Windows HPC Server.
@@ -207,32 +236,45 @@ dfs = {'shareDir', 'REQ', 'scheduler', 'REQ', 'executable', 'fevalDistrDisk', ..
     'mccOptions', {}, 'coresPerTask', 1, 'minCores', 1024, 'priority', 2000};
 p = getPrmDflt(pLaunch, dfs, 1);
 tDir = jobSetup(p.shareDir, funNm, p.executable, p.mccOptions);
-for i = 1:nJob, jobSave(tDir, jobs{i}, i); end
+
+for i = 1:nJob
+    jobSave(tDir, jobs{i}, i);
+end
+
 hpcSubmit(funNm, 1:nJob, tDir, p);
 k = 0;
 ticId = ticStatus('collecting jobs');
 while (1)
     done = jobFileIds(tDir, 'done');
     k = k + length(done);
-    for i1 = done, res{i1} = jobLoad(tDir, i1, store); end
+    for i1 = done
+        res{i1} = jobLoad(tDir, i1, store);
+    end
     pause(5);
     tocStatus(ticId, k/nJob);
-    if (k == nJob), out = 1;
+    if (k == nJob)
+        out = 1;
         break;
     end
 end
-for i = 1:10, try rmdir(tDir, 's');
+for i = 1:10
+    try
+        rmdir(tDir, 's');
         break;
-    catch, pause(5), end;
+    catch
+        pause(5);
+    end
 end %#ok<CTCH>
 end
+
 
 function tids = hpcSubmit(funNm, ids, tDir, pLaunch)
 % Helper: send jobs w given ids to HPC cluster.
 n = length(ids);
 tids = cell(1, n);
-if (n == 0), return;
-end;
+if (n == 0)
+    return;
+end
 scheduler = [' /scheduler:', pLaunch.scheduler, ' '];
 m = system2(['cluscfg view', scheduler], 0);
 minCores = (hpcParse(m, 'total number of nodes', 1) - ...
@@ -244,27 +286,43 @@ jid = hpcParse(m, 'created job, id', 0);
 s = min(ids);
 e = max(ids);
 p = n > 1 && isequal(ids, s:e);
-if (p), jid1 = [jid, '.1'];
-else jid1 = jid;
+if (p)
+    jid1 = [jid, '.1'];
+else
+    jid1 = jid;
 end
-for i = 1:n, tids{i} = [jid1, '.', int2str(i)]; end
+
+for i = 1:n
+    tids{i} = [jid1, '.', int2str(i)];
+end
+
 cmd0 = '';
-if (p), cmd0 = ['/parametric:', int2str(s), '-', int2str(e)];
+if (p)
+    cmd0 = ['/parametric:', int2str(s), '-', int2str(e)];
 end
+
 cmd = @(id) ['job add ', jid, scheduler, '/workdir:', tDir, ' /numcores:', ...
     int2str(pLaunch.coresPerTask), ' ', cmd0, ' /stdout:stdout', id, ...
     '.txt ', pLaunch.executable, ' ', funNm, ' ', tDir, ' ', id];
-if (p), ids1 = '*';
+if (p)
+    ids1 = '*';
     n = 1;
-else ids1 = int2str2(ids);
+else
+    ids1 = int2str2(ids);
 end
-if (n == 1), ids1 = {ids1};
-end;
-for i = 1:n, system2(cmd(ids1{i}), 1);
+
+if (n == 1)
+    ids1 = {ids1};
 end
+
+for i = 1:n
+    system2(cmd(ids1{i}), 1);
+end
+
 system2(['job submit /id:', jid, scheduler], 1);
 disp(repmat(' ', 1, 80));
 end
+
 
 function v = hpcParse(msg, key, tonum)
 % Helper: extract val corresponding to key in hpc msg.
@@ -273,21 +331,32 @@ t = strtrim(t(1:floor(length(t)/2)*2));
 keys = t(1:2:end);
 vals = t(2:2:end);
 j = find(strcmpi(key, keys));
-if (isempty(j)), error('key ''%s'' not found in:\n %s', key, msg); end
+if (isempty(j))
+    error('key ''%s'' not found in:\n %s', key, msg);
+end
+
 v = vals{j};
-if (tonum == 0), return;
-elseif (isempty(v)), v = 0;
+if (tonum == 0)
+    return;
+elseif (isempty(v))
+    v = 0;
     return;
 end
-if (tonum == 1), v = str2double(v);
+
+if (tonum == 1)
+    v = str2double(v);
     return;
 end
+
 v = regexp(v, ' ', 'split');
 v = str2double(regexp(v{1}, ':', 'split'));
-if (numel(v) == 4), v(5) = 0;
-end;
+if (numel(v) == 4)
+    v(5) = 0;
+end
+
 v = ((v(1) * 24 + v(2)) * 60 + v(3)) * 60 + v(4) + v(5) / 1000;
 end
+
 
 function tDir = jobSetup(rtDir, funNm, executable, mccOptions)
 % Helper: prepare by setting up temporary dir and compiling funNm
@@ -303,14 +372,18 @@ else
     t = clock;
     fprintf('Compiling (this may take a while)...\n');
     [~, f, e] = fileparts(executable);
-    if (isempty(f)), f = 'fevalDistrDisk';
+    if (isempty(f))
+        f = 'fevalDistrDisk';
     end
     mcc('-m', 'fevalDistrDisk', '-d', tDir, '-o', f, '-a', funNm, mccOptions{:});
     t = etime(clock, t);
     fprintf('Compile complete (%.1f seconds).\n', t);
-    if (~isempty(executable)), copyfile([tDir, filesep, f, e], executable); end
+    if (~isempty(executable))
+        copyfile([tDir, filesep, f, e], executable);
+    end
 end
 end
+
 
 function ids = jobFileIds(tDir, type)
 % Helper: get list of job files ids on disk of given type
@@ -318,40 +391,56 @@ fs = dir([tDir, '*-', type, '*']);
 fs = {fs.name};
 n = length(fs);
 ids = zeros(1, n);
-for i = 1:n, ids(i) = str2double(fs{i}(1:10));
+for i = 1:n
+    ids(i) = str2double(fs{i}(1:10));
 end
 end
+
 
 function jobSave(tDir, job, ind) %#ok<INUSL>
 % Helper: save job to temporary file for use with fevalDistrDisk()
 save([tDir, int2str2(ind, 10), '-in'], 'job');
 end
 
+
 function r = jobLoad(tDir, ind, store)
 % Helper: load job and delete temporary files from fevalDistrDisk()
 f = [tDir, int2str2(ind, 10)];
-if (store), r = load([f, '-out']);
+if (store)
+    r = load([f, '-out']);
     r = r.r;
-else r = [];
+else
+    r = [];
 end
 fs = {[f, '-done'], [f, '-in.mat'], [f, '-out.mat']};
 delete(fs{:});
 pause(.1);
-for i = 1:3, k = 0; while (exist(fs{i}, 'file') == 2) %#ok<ALIGN>
+for i = 1:3
+    k = 0;
+    while (exist(fs{i}, 'file') == 2) %#ok<ALIGN>
         warning('Waiting to delete %s.', fs{i}); %#ok<WNTAG>
         delete(fs{i});
         pause(5);
         k = k + 1;
-        if (k > 12), break;
-        end;
-    end; end
+        if (k > 12)
+            break;
+        end
+    end
 end
+end
+
 
 function msg = system2(cmd, show)
 % Helper: wraps system() call
-if (show), disp(cmd); end
+if (show)
+    disp(cmd);
+end
 [status, msg] = system(cmd);
 msg = msg(1:end-1);
-if (status), error(msg); end
-if (show), disp(msg); end
+if (status)
+    error(msg);
+end
+if (show)
+    disp(msg);
+end
 end

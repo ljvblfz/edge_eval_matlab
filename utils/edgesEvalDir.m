@@ -52,16 +52,20 @@ p = getPrmDflt(varargin, dfs, 1);
 resDir = p.resDir;
 gtDir = p.gtDir;
 evalDir = [resDir, '-eval/'];
-if (~exist(evalDir, 'dir')), mkdir(evalDir);
+if (~exist(evalDir, 'dir'))
+    mkdir(evalDir);
 end
 
 % check if results already exist, if so load and return
 fNm = fullfile(evalDir, 'eval_bdry.txt');
-if (exist(fNm, 'file')), R = dlmread(fNm);
+if (exist(fNm, 'file'))
+    R = dlmread(fNm);
     R = mat2cell2(R, [1, 8]);
     varargout = R([4, 3, 2, 1, 7, 6, 5, 8]);
-    if (nargout <= 8), return;
-    end;
+    if (nargout <= 8)
+        return;
+    end
+
     R = dlmread(fullfile(evalDir, 'eval_bdry_thr.txt'));
     P = R(:, 3);
     R = R(:, 2);
@@ -80,14 +84,16 @@ n = length(ids);
 do = false(1, n);
 jobs = cell(1, n);
 res = cell(1, n);
-for i = 1:n, id = ids{i}(1:end - 4);
+for i = 1:n
+    id = ids{i}(1:end - 4);
     res{i} = fullfile(evalDir, [id, '_ev1.txt']);
     do(i) = ~exist(res{i}, 'file');
     im1 = fullfile(resDir, [id, '.png']);
     gt1 = fullfile(gtDir, [id, '.mat']);
     jobs{i} = {im1, gt1, 'out', res{i}, 'thrs', p.thrs, 'maxDist', p.maxDist, ...
         'thin', p.thin};
-    if (0), edgesEvalImg(jobs{i}{:});
+    if (0)
+        edgesEvalImg(jobs{i}{:});
     end
 end
 fevalDistr('edgesEvalImg', jobs(do), p.pDistr{:});
@@ -134,7 +140,8 @@ end
 [oisR, oisP, oisF] = computeRPF(oisCntR, oisSumR, oisCntP, oisSumP);
 
 % compute AP/R50 (interpolating 100 values, has minor bug: should be /101)
-if (0), R = [0; R; 1];
+if (0)
+    R = [0; R; 1];
     P = [1; P; 0];
     F = [0; F; 0];
     T = [1; T; 0];
@@ -146,7 +153,8 @@ P = P(k);
 T = T(k);
 F = F(k);
 AP = 0;
-if (numel(R) > 1), AP = interp1(R, P, 0:.01:1);
+if (numel(R) > 1)
+    AP = interp1(R, P, 0:.01:1);
     AP = sum(AP(~isnan(AP))) / 100;
 end
 [~, o] = unique(P);
@@ -159,12 +167,13 @@ writeRes(evalDir, 'eval_bdry_thr.txt', [T, R, P, F]);
 writeRes(evalDir, 'eval_bdry.txt', [varargout{[4, 3, 2, 1, 7, 6, 5, 8]}]);
 
 % optionally perform cleanup
-if (p.cleanup), delete([evalDir, '/*_ev1.txt']);
+if (p.cleanup)
+    delete([evalDir, '/*_ev1.txt']);
     delete([resDir, '/*.png']);
     rmdir(resDir);
 end
-
 end
+
 
 function [R, P, F] = computeRPF(cntR, sumR, cntP, sumP)
 % compute precision, recall and F measure given cnts and sums
@@ -173,9 +182,11 @@ P = cntP ./ max(eps, sumP);
 F = 2 * P .* R ./ max(eps, P+R);
 end
 
+
 function [bstR, bstP, bstF, bstT] = findBestRPF(T, R, P)
 % linearly interpolate to find best thr for optimizing F
-if (numel(T) == 1), bstT = T;
+if (numel(T) == 1)
+    bstT = T;
     bstR = R;
     bstP = P;
     bstF = 2 * P .* R ./ max(eps, P+R);
@@ -190,7 +201,8 @@ for j = 2:numel(T)
     Tj = T(j) .* A + T(j-1) .* B;
     Fj = 2 .* Pj .* Rj ./ max(eps, Pj+Rj);
     [f, k] = max(Fj);
-    if (f > bstF), bstT = Tj(k);
+    if (f > bstF)
+        bstT = Tj(k);
         bstR = Rj(k);
         bstP = Pj(k);
         bstF = f;
@@ -198,12 +210,15 @@ for j = 2:numel(T)
 end
 end
 
+
 function writeRes(alg, fNm, vals)
 % write results to disk
 k = size(vals, 2);
 fNm = fullfile(alg, fNm);
 fid = fopen(fNm, 'w');
-if (fid == -1), error('Could not open file %s for writing.', fNm); end
+if (fid == -1)
+    error('Could not open file %s for writing.', fNm);
+end
 frmt = repmat('%10g ', [1, k]);
 frmt = [frmt(1:end-1), '\n'];
 fprintf(fid, frmt, vals');
